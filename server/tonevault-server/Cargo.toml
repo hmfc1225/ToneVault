@@ -1,0 +1,30 @@
+[package]
+name = "tonevault-server"
+version.workspace = true
+edition.workspace = true
+
+[features]
+default = ["sqlite"]
+sqlite = ["tonevault-db/sqlite"]
+postgres = ["tonevault-db/postgres"]
+
+[dependencies]
+tonevault-core = { path = "../tonevault-core" }
+tonevault-db = { path = "../tonevault-db", default-features = false }
+tonevault-auth = { path = "../tonevault-auth" }
+tonevault-webdav = { path = "../tonevault-webdav" }
+axum = "0.8"
+tokio = { workspace = true }
+tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { workspace = true }
+serde_json = "1"
+anyhow = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+base64 = "0.22"
+reqwest = { version = "0.12", features = ["json"] }
+percent-encoding = "2"
+url = "2"
+time = "0.3"

@@ -1,0 +1,30 @@
+# ToneVault Configuration Example
+# Copy this file to tonevault.toml and modify as needed
+
+[server]
+host = "0.0.0.0"
+port = 8080
+# base_url = "http://localhost:8080"
+
+[database]
+engine = "sqlite"          # "sqlite" or "postgres"
+sqlite_path = "data/tonevault.db"
+# postgres_url = "postgresql://user:password@localhost/tonevault"
+
+[auth]
+jwt_secret = "change-me-in-production"   # MUST change in production!
+jwt_expiry_hours = 1                     # Access token lifetime
+refresh_expiry_days = 7                  # Refresh token lifetime
+api_key_prefix = "tv_"                   # Prefix for generated API keys
+
+[scanner]
+scan_on_startup = true                   # Scan all libraries on startup
+watch_for_changes = true                 # Watch for filesystem changes
+scan_interval_minutes = 60              # Periodic scan interval
+
+[webdav]
+enabled = true
+mount_path = "/dav"
+
+[logging]
+level = "info"                           # trace, debug, info, warn, error

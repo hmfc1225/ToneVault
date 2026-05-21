@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "server/tonevault-server",
+    "server/tonevault-core",
+    "server/tonevault-db",
+    "server/tonevault-webdav",
+    "server/tonevault-auth",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio = { version = "1", features = ["full"] }
+thiserror = "2"
+anyhow = "1"

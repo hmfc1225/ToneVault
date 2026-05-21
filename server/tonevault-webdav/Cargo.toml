@@ -1,0 +1,16 @@
+[package]
+name = "tonevault-webdav"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tonevault-core = { path = "../tonevault-core" }
+tonevault-db = { path = "../tonevault-db" }
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+anyhow = "1"

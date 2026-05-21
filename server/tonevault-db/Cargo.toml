@@ -1,0 +1,25 @@
+[package]
+name = "tonevault-db"
+version.workspace = true
+edition.workspace = true
+
+[features]
+default = ["sqlite"]
+sqlite = ["sqlx/sqlite", "libsqlite3-sys"]
+postgres = ["sqlx/postgres"]
+
+[dependencies]
+tonevault-core = { path = "../tonevault-core" }
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-native-tls", "chrono", "uuid", "migrate"] }
+anyhow.workspace = true
+serde.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+async-trait = "0.1"
+
+[dependencies.libsqlite3-sys]
+version = "*"
+features = ["bundled"]
+optional = true

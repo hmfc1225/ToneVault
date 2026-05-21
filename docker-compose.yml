@@ -1,0 +1,29 @@
+services:
+  tonevault:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - tonevault-data:/app/data
+      - tonevault-config:/app/config
+      - /path/to/audiobooks:/audiobooks:ro
+    environment:
+      - RUST_LOG=info
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: tonevault
+      POSTGRES_USER: tonevault
+      POSTGRES_PASSWORD: changeme
+    profiles:
+      - postgres
+
+volumes:
+  tonevault-data:
+  tonevault-config:
+  pgdata:

@@ -13,7 +13,9 @@ FROM rust:1.82-alpine AS backend-build
 RUN apk add --no-cache musl-dev pkgconf openssl-dev openssl-libs-static
 
 WORKDIR /app/server
-COPY server/Cargo.toml server/Cargo.lock ./
+
+# Copy workspace Cargo.toml and all crate Cargo.toml files
+COPY server/Cargo.toml ./
 COPY server/tonevault-server/Cargo.toml tonevault-server/Cargo.toml
 COPY server/tonevault-core/Cargo.toml tonevault-core/Cargo.toml
 COPY server/tonevault-db/Cargo.toml tonevault-db/Cargo.toml

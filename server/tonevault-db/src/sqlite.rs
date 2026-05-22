@@ -167,13 +167,13 @@ pub async fn list_books(pool: &sqlx::SqlitePool, filter: &BookFilter) -> Result<
     );
 
     // Count
+    let pattern = filter.query.as_ref().map(|q| format!("%{}%", q));
     let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
     if let Some(lid) = filter.library_id {
         count_query = count_query.bind(lid.to_string());
     }
-    if let Some(ref q) = filter.query {
-        let pattern = format!("%{}%", q);
-        count_query = count_query.bind(&pattern).bind(&pattern);
+    if let Some(ref p) = pattern {
+        count_query = count_query.bind(p).bind(p);
     }
     let total = count_query.fetch_one(pool).await?;
 
@@ -182,9 +182,8 @@ pub async fn list_books(pool: &sqlx::SqlitePool, filter: &BookFilter) -> Result<
     if let Some(lid) = filter.library_id {
         q = q.bind(lid.to_string());
     }
-    if let Some(ref query) = filter.query {
-        let pattern = format!("%{}%", query);
-        q = q.bind(&pattern).bind(&pattern);
+    if let Some(ref p) = pattern {
+        q = q.bind(p).bind(p);
     }
     let offset = (filter.page - 1) * filter.per_page;
     q = q.bind(filter.per_page).bind(offset);

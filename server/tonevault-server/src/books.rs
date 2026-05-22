@@ -1,3 +1,4 @@
+use axum::Router;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -94,7 +95,7 @@ pub async fn list_books(
             page: result.page,
             per_page: result.per_page,
             total_pages: result.total_pages,
-        }).into_response()
+        }).into_response(),
         Err(e) => err500(&e),
     }
 }

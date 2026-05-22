@@ -1,0 +1,70 @@
+# ============================================================
+# ToneVault - 飞牛NAS (fnOS) 专用 Docker Compose
+# ============================================================
+#
+# 使用方法：
+#   1. 将此文件上传到飞牛NAS，例如 /vol1/docker/tonevault/
+#   2. 修改下方标注 【必改】 的配置项
+#   3. 在飞牛Docker管理器中导入此Compose文件部署
+#      或通过SSH执行: cd /vol1/docker/tonevault && docker compose up -d
+#
+# 更新镜像：
+#   docker compose pull && docker compose up -d
+#
+# 有声书目录映射：
+#   将 /vol1/有声书目录 改为你实际存放有声书的路径
+#   支持映射多个目录，参考下方 audiobooks 配置
+#
+# 数据备份：
+#   数据库和配置文件存储在 /vol1/docker/tonevault/data
+#   备份此目录即可恢复所有数据
+# ============================================================
+
+services:
+  tonevault:
+    image: ghcr.io/hmfc1225/tonevault:latest
+    container_name: tonevault
+    ports:
+      - "3000:3000"
+    volumes:
+      # 持久化数据（数据库、配置）
+      - /vol1/docker/tonevault/data:/app/data
+      - /vol1/docker/tonevault/config:/app/config
+      # 【必改】有声书目录 - 改为你实际的有声书存放路径
+      - /vol1/有声书目录:/audiobooks:ro
+      # 如需映射多个有声书目录，取消下方注释并修改路径
+      # - /vol2/更多有声书:/audiobooks2:ro
+    environment:
+      # 服务监听
+      - TONEVAULT_HOST=0.0.0.0
+      - TONEVAULT_PORT=3000
+
+      # 【必改】JWT密钥 - 请替换为随机字符串，用于用户认证
+      # 可用以下命令生成: openssl rand -hex 32
+      - TONEVAULT_AUTH_SECRET=change-me-to-a-random-secret
+
+      # 数据库（默认SQLite，无需修改）
+      - TONEVAULT_DB_ENGINE=sqlite
+      - TONEVAULT_DB_PATH=/app/data/tonevault.db
+
+      # 扫描设置
+      - TONEVAULT_SCAN_ON_STARTUP=true    # 启动时扫描有声书
+      - TONEVAULT_WATCH=true              # 实时监控目录变化
+      - TONEVAULT_SCAN_INTERVAL=60        # 定时扫描间隔（分钟）
+
+      # WebDAV（可通过WebDAV协议访问有声书）
+      - TONEVAULT_WEBDAV_ENABLED=true
+
+      # 日志级别: trace, debug, info, warn, error
+      - TONEVAULT_LOG_LEVEL=info
+
+      # 时区（确保时间显示正确）
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+    # 飞牛NAS资源限制（按需调整）
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M

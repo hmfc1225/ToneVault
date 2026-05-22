@@ -1,16 +1,25 @@
 services:
   tonevault:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: tonevault
     ports:
       - "3000:3000"
     volumes:
       - tonevault-data:/app/data
-      - /path/to/audiobooks:/audiobooks:ro
+      - ./audiobooks:/audiobooks:ro
     environment:
       - TONEVAULT_HOST=0.0.0.0
       - TONEVAULT_PORT=3000
       - TONEVAULT_AUTH_SECRET=change-me-to-a-random-secret
+      - TONEVAULT_DB_ENGINE=sqlite
+      - TONEVAULT_DB_PATH=/app/data/tonevault.db
+      - TONEVAULT_SCAN_ON_STARTUP=true
+      - TONEVAULT_WATCH=true
+      - TONEVAULT_SCAN_INTERVAL=60
+      - TONEVAULT_WEBDAV_ENABLED=true
+      - TONEVAULT_LOG_LEVEL=info
     restart: unless-stopped
 
 volumes:

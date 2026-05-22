@@ -51,3 +51,8 @@ export function getBookCoverUrl(id: string): string {
 export function getTrackStreamUrl(id: string): string {
   return `/api/v1/tracks/${id}/stream`
 }
+
+export async function searchBooks(query: string): Promise<Book[]> {
+  const { data } = await client.get<Book[]>('/search', { params: { q: query } })
+  return data
+}

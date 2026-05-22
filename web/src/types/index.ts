@@ -6,15 +6,68 @@ export interface User {
   role: string
 }
 
+export interface AuthResponse {
+  access_token: string
+  refresh_token: string
+  user: User
+}
+
+export interface UpsertPlaybackPosition {
+  book_id: string
+  track_id: string
+  position_secs: number
+  percentage: number
+  is_finished?: boolean
+}
+
+export interface SeriesWithPosition {
+  series: Series
+  position: number
+}
+
+export interface CreateBookmark {
+  book_id: string
+  track_id: string
+  title: string
+  position_secs: number
+  note?: string
+}
+
+export interface UpdateLibrary {
+  name?: string
+  root_path?: string
+  description?: string
+  scan_enabled?: boolean
+  watch_enabled?: boolean
+}
+
+export type SourceType = 'local' | 'webdav' | 'rss'
+
+export interface WebDavConnectRequest {
+  url: string
+  username: string
+  password: string
+}
+
+export interface WebDavEntry {
+  name: string
+  path: string
+  is_dir: boolean
+  size?: number
+}
+
 export interface Library {
   id: string
   name: string
   root_path: string
   description?: string
+  source_type: SourceType
+  base_url?: string
   scan_enabled: boolean
   watch_enabled: boolean
   scan_status: string
   book_count: number
+  last_scan?: string
   created_at: string
   updated_at: string
 }
@@ -23,6 +76,8 @@ export interface CreateLibrary {
   name: string
   root_path: string
   description?: string
+  source_type?: SourceType
+  base_url?: string
   scan_enabled?: boolean
   watch_enabled?: boolean
 }

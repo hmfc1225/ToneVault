@@ -8,7 +8,7 @@ COPY web/ ./
 RUN npm run build
 
 # ---- Build Backend ----
-FROM rust:1.85-alpine AS backend-build
+FROM rust:1.87-alpine AS backend-build
 
 RUN apk add --no-cache musl-dev pkgconf openssl-dev openssl-libs-static
 

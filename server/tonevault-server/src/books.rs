@@ -7,12 +7,9 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use tonevault_core::models::*;
-use tonevault_db::repository::Repository;
+use tonevault_db::Repository;
 
-#[derive(Clone)]
-pub struct BookState {
-    pub repo: Arc<dyn Repository>,
-}
+use crate::AppState;
 
 macro_rules! uuid_path {
     ($id:expr) => {
@@ -23,7 +20,28 @@ macro_rules! uuid_path {
     };
 }
 
-// --- Book routes ---
+pub fn router() -> Router<Arc<AppState>> {
+    Router::new()
+        .route("/api/v1/books", axum::routing::get(list_books))
+        .route("/api/v1/books/{id}", axum::routing::get(get_book).put(update_book).delete(delete_book))
+        .route("/api/v1/books/{id}/authors", axum::routing::get(get_book_authors))
+        .route("/api/v1/books/{id}/series", axum::routing::get(get_book_series))
+        .route("/api/v1/books/{id}/tracks", axum::routing::get(get_book_tracks))
+        .route("/api/v1/authors", axum::routing::get(list_authors))
+        .route("/api/v1/authors/{id}/books", axum::routing::get(get_author_books))
+        .route("/api/v1/series", axum::routing::get(list_series))
+        .route("/api/v1/series/{id}/books", axum::routing::get(get_series_books))
+        .route("/api/v1/search", axum::routing::get(search_books))
+        .route("/api/v1/positions/{user_id}", axum::routing::put(upsert_position).get(get_user_positions))
+        .route("/api/v1/positions/{user_id}/{book_id}", axum::routing::get(get_position))
+        .route("/api/v1/bookmarks/{user_id}", axum::routing::post(create_bookmark).get(list_all_user_bookmarks))
+        .route("/api/v1/bookmarks/{user_id}/{book_id}", axum::routing::get(list_bookmarks))
+        .route("/api/v1/bookmarks/item/{id}", axum::routing::delete(delete_bookmark))
+        .route("/api/v1/collections/{user_id}", axum::routing::post(create_collection).get(list_collections))
+        .route("/api/v1/collections/item/{id}", axum::routing::delete(delete_collection))
+        .route("/api/v1/collections/{collection_id}/books/{book_id}", axum::routing::post(add_book_to_collection).delete(remove_book_from_collection))
+        .route("/api/v1/collections/{id}/books", axum::routing::get(get_collection_books))
+}
 
 #[derive(Deserialize)]
 pub struct ListBooksQuery {
@@ -38,7 +56,7 @@ pub struct ListBooksQuery {
 }
 
 pub async fn list_books(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Query(query): Query<ListBooksQuery>,
 ) -> impl IntoResponse {
     let library_id = query.library_id.as_ref().and_then(|s| Uuid::parse_str(s).ok());
@@ -70,29 +88,19 @@ pub async fn list_books(
     };
 
     match state.repo.list_books(&filter).await {
-        Ok(result) => {
-            #[derive(Serialize)]
-            struct ListResponse {
-                items: Vec<BookResponse>,
-                total: i64,
-                page: i64,
-                per_page: i64,
-                total_pages: i64,
-            }
-            Json(ListResponse {
-                items: result.items.iter().map(book_to_response).collect(),
-                total: result.total,
-                page: result.page,
-                per_page: result.per_page,
-                total_pages: result.total_pages,
-            }).into_response()
-        }
+        Ok(result) => Json(ListResponse {
+            items: result.items.iter().map(book_to_response).collect(),
+            total: result.total,
+            page: result.page,
+            per_page: result.per_page,
+            total_pages: result.total_pages,
+        }).into_response()
         Err(e) => err500(&e),
     }
 }
 
 pub async fn get_book(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -117,7 +125,7 @@ pub struct UpdateBookRequest {
 }
 
 pub async fn update_book(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
     Json(req): Json<UpdateBookRequest>,
 ) -> impl IntoResponse {
@@ -140,7 +148,7 @@ pub async fn update_book(
 }
 
 pub async fn delete_book(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -151,7 +159,7 @@ pub async fn delete_book(
 }
 
 pub async fn get_book_authors(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -175,7 +183,7 @@ pub async fn get_book_authors(
 }
 
 pub async fn get_book_series(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -192,10 +200,8 @@ pub async fn get_book_series(
     }
 }
 
-// --- Track routes ---
-
 pub async fn get_book_tracks(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -214,9 +220,7 @@ pub async fn get_book_tracks(
     }
 }
 
-// --- Author routes ---
-
-pub async fn list_authors(State(state): State<BookState>) -> impl IntoResponse {
+pub async fn list_authors(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     match state.repo.list_authors().await {
         Ok(authors) => {
             #[derive(Serialize)]
@@ -231,7 +235,7 @@ pub async fn list_authors(State(state): State<BookState>) -> impl IntoResponse {
 }
 
 pub async fn get_author_books(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -241,9 +245,7 @@ pub async fn get_author_books(
     }
 }
 
-// --- Series routes ---
-
-pub async fn list_series(State(state): State<BookState>) -> impl IntoResponse {
+pub async fn list_series(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     match state.repo.list_series().await {
         Ok(series) => {
             #[derive(Serialize)]
@@ -258,7 +260,7 @@ pub async fn list_series(State(state): State<BookState>) -> impl IntoResponse {
 }
 
 pub async fn get_series_books(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -268,8 +270,6 @@ pub async fn get_series_books(
     }
 }
 
-// --- Search ---
-
 #[derive(Deserialize)]
 pub struct SearchQuery {
     pub q: String,
@@ -277,7 +277,7 @@ pub struct SearchQuery {
 }
 
 pub async fn search_books(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Query(query): Query<SearchQuery>,
 ) -> impl IntoResponse {
     let limit = query.limit.unwrap_or(20);
@@ -286,8 +286,6 @@ pub async fn search_books(
         Err(e) => err500(&e),
     }
 }
-
-// --- Playback position routes ---
 
 #[derive(Deserialize)]
 pub struct UpsertPositionRequest {
@@ -298,7 +296,7 @@ pub struct UpsertPositionRequest {
 }
 
 pub async fn upsert_position(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(user_id): Path<String>,
     Json(req): Json<UpsertPositionRequest>,
 ) -> impl IntoResponse {
@@ -320,7 +318,7 @@ pub async fn upsert_position(
 }
 
 pub async fn get_position(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path((user_id, book_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
     let uid = uuid_path!(user_id);
@@ -340,7 +338,7 @@ pub async fn get_position(
 }
 
 pub async fn get_user_positions(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -358,8 +356,6 @@ pub async fn get_user_positions(
     }
 }
 
-// --- Bookmark routes ---
-
 #[derive(Deserialize)]
 pub struct CreateBookmarkRequest {
     pub book_id: String,
@@ -370,7 +366,7 @@ pub struct CreateBookmarkRequest {
 }
 
 pub async fn create_bookmark(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(user_id): Path<String>,
     Json(req): Json<CreateBookmarkRequest>,
 ) -> impl IntoResponse {
@@ -393,7 +389,7 @@ pub async fn create_bookmark(
 }
 
 pub async fn list_bookmarks(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path((user_id, book_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
     let uid = uuid_path!(user_id);
@@ -412,7 +408,7 @@ pub async fn list_bookmarks(
 }
 
 pub async fn list_all_user_bookmarks(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(user_id): Path<String>,
 ) -> impl IntoResponse {
     let uid = uuid_path!(user_id);
@@ -430,7 +426,7 @@ pub async fn list_all_user_bookmarks(
 }
 
 pub async fn delete_bookmark(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -440,8 +436,6 @@ pub async fn delete_bookmark(
     }
 }
 
-// --- Collection routes ---
-
 #[derive(Deserialize)]
 pub struct CreateCollectionRequest {
     pub name: String,
@@ -449,7 +443,7 @@ pub struct CreateCollectionRequest {
 }
 
 pub async fn create_collection(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(user_id): Path<String>,
     Json(req): Json<CreateCollectionRequest>,
 ) -> impl IntoResponse {
@@ -466,7 +460,7 @@ pub async fn create_collection(
 }
 
 pub async fn list_collections(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -484,7 +478,7 @@ pub async fn list_collections(
 }
 
 pub async fn delete_collection(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -495,7 +489,7 @@ pub async fn delete_collection(
 }
 
 pub async fn add_book_to_collection(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path((collection_id, book_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
     let cid = uuid_path!(collection_id);
@@ -507,7 +501,7 @@ pub async fn add_book_to_collection(
 }
 
 pub async fn remove_book_from_collection(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path((collection_id, book_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
     let cid = uuid_path!(collection_id);
@@ -519,7 +513,7 @@ pub async fn remove_book_from_collection(
 }
 
 pub async fn get_collection_books(
-    State(state): State<BookState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = uuid_path!(id);
@@ -528,8 +522,6 @@ pub async fn get_collection_books(
         Err(e) => err500(&e),
     }
 }
-
-// --- Helpers ---
 
 #[derive(Serialize)]
 struct BookResponse {
@@ -551,6 +543,15 @@ struct BookResponse {
     metadata_source: Option<String>,
     created_at: String,
     updated_at: String,
+}
+
+#[derive(Serialize)]
+struct ListResponse {
+    items: Vec<BookResponse>,
+    total: i64,
+    page: i64,
+    per_page: i64,
+    total_pages: i64,
 }
 
 fn book_to_response(book: &Book) -> BookResponse {
@@ -576,7 +577,7 @@ fn book_to_response(book: &Book) -> BookResponse {
     }
 }
 
-fn err500(e: &anyhow::Error) -> axum::response::Response {
+fn err500(e: &tonevault_db::DbError) -> axum::response::Response {
     tracing::error!("Database error: {}", e);
     (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"error": "Database error"}))).into_response()
 }

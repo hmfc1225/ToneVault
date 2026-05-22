@@ -6,15 +6,18 @@ use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncSeekExt, SeekFrom};
 use uuid::Uuid;
 
-use tonevault_db::repository::Repository;
+use tonevault_db::Repository;
 
-#[derive(Clone)]
-pub struct StreamState {
-    pub repo: Arc<dyn Repository>,
+use crate::AppState;
+
+pub fn router() -> Router<Arc<AppState>> {
+    Router::new()
+        .route("/api/v1/tracks/{id}/stream", axum::routing::get(stream_track))
+        .route("/api/v1/books/{id}/cover", axum::routing::get(get_book_cover))
 }
 
 pub async fn stream_track(
-    State(state): State<StreamState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
     req: axum::extract::Request,
 ) -> impl IntoResponse {
@@ -42,7 +45,6 @@ pub async fn stream_track(
         Err(_) => return (StatusCode::NOT_FOUND, "File not found").into_response(),
     };
 
-    // Parse Range header
     let range = req.headers()
         .get(header::RANGE)
         .and_then(|v| v.to_str().ok())
@@ -73,7 +75,6 @@ pub async fn stream_track(
             .unwrap()
             .into_response()
     } else {
-        // Full file
         let mut buffer = Vec::with_capacity(file_size as usize);
         if let Err(e) = file.read_to_end(&mut buffer).await {
             tracing::error!("Failed to read file: {}", e);
@@ -92,7 +93,7 @@ pub async fn stream_track(
 }
 
 pub async fn get_book_cover(
-    State(state): State<StreamState>,
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
     let uuid = match Uuid::parse_str(&id) {

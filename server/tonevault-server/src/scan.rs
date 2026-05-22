@@ -4,28 +4,28 @@ use tokio::sync::mpsc;
 use tracing::{error, info};
 
 use tonevault_core::scanner::{Scanner, ScannerEvent};
-use tonevault_db::Database;
+use tonevault_db::Repository;
 
 pub struct ScanManager {
-    db: Arc<Database>,
+    repo: Arc<dyn Repository>,
     scanner: Scanner,
 }
 
 impl ScanManager {
-    pub fn new(db: Arc<Database>) -> Self {
+    pub fn new(repo: Arc<dyn Repository>) -> Self {
         Self {
-            db,
+            repo,
             scanner: Scanner::new(),
         }
     }
 
     pub async fn start_scan(&self, library_id: i64) -> anyhow::Result<()> {
-        let library = self.db.get_library(library_id).await?
+        let library = self.repo.get_library(library_id).await?
             .ok_or_else(|| anyhow::anyhow!("Library not found: {}", library_id))?;
 
         let (tx, mut rx) = mpsc::channel::<ScannerEvent>(100);
 
-        let db = self.db.clone();
+        let repo = self.repo.clone();
         tokio::spawn(async move {
             while let Some(event) = rx.recv().await {
                 match event {
@@ -35,12 +35,12 @@ impl ScanManager {
                     ScannerEvent::Progress { library_id, processed, total } => {
                         info!(library_id, processed, total, "Scan progress");
                     }
-                    ScannerEvent::BookParsed { library_id, dir, metadata } => {
+                    ScannerEvent::BookParsed { library_id, dir, metadata: _ } => {
                         info!(library_id, dir = %dir, "Book parsed");
                     }
                     ScannerEvent::Completed { library_id, new_books, updated_books } => {
                         info!(library_id, new_books, updated_books, "Scan completed");
-                        if let Err(e) = db.update_last_scan(library_id).await {
+                        if let Err(e) = repo.update_last_scan(library_id).await {
                             error!(library_id, error = %e, "Failed to update scan time");
                         }
                     }

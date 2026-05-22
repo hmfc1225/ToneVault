@@ -45,6 +45,7 @@ function savePosition() {
     book_id: currentBook.value.id,
     track_id: currentTrack.value.id,
     position_secs: pos,
+    percentage: duration.value > 0 ? pos / duration.value : 0,
     duration_secs: Math.floor(duration.value),
   }).catch(() => {})
 }

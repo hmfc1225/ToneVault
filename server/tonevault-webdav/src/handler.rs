@@ -146,7 +146,8 @@ async fn propfind(state: &WebDavState, dav_path: &str, req: Request) -> Response
                         Ok(b) => b,
                         Err(_) => continue,
                     };
-                    let author_books: Vec<&Book> = author_books.iter().filter(|b| b.library_id == library.id).collect();
+                    let lib_id_str = library.id.to_string();
+                    let author_books: Vec<&Book> = author_books.iter().filter(|b| b.library_id.to_string() == lib_id_str).collect();
                     if author_books.is_empty() {
                         continue;
                     }

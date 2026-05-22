@@ -17,6 +17,7 @@ export interface UpsertPlaybackPosition {
   track_id: string
   position_secs: number
   percentage: number
+  duration_secs?: number
   is_finished?: boolean
 }
 
@@ -78,6 +79,8 @@ export interface CreateLibrary {
   description?: string
   source_type?: SourceType
   base_url?: string
+  username?: string
+  password?: string
   scan_enabled?: boolean
   watch_enabled?: boolean
 }

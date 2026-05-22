@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import * as api from '@/api/authors'
-import type { Book } from '@/types'
+import type { Book, PaginatedResult } from '@/types'
 
 const route = useRoute()
 const authorName = ref('')
@@ -12,7 +12,8 @@ const loading = ref(true)
 onMounted(async () => {
   try {
     const id = route.params.id as string
-    books.value = await api.getAuthorBooks(id)
+    const result: PaginatedResult<Book> = await api.getAuthorBooks(id)
+    books.value = result.items
     authorName.value = books.value[0]?.authors?.find(a => a.id === id)?.name || '作者'
   } finally {
     loading.value = false

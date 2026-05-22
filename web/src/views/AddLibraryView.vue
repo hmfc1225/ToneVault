@@ -59,8 +59,8 @@ const canSave = computed(() => {
 
 const webdavBreadcrumbs = computed(() => {
   if (!webdavCurrentPath.value) return []
-  const parts = webdavCurrentPath.split('/').filter(Boolean)
-  return parts.map((part, idx) => ({
+  const parts = webdavCurrentPath.value.split('/').filter(Boolean)
+  return parts.map((part: string, idx: number) => ({
     label: decodeURIComponent(part),
     path: '/' + parts.slice(0, idx + 1).join('/'),
   }))
@@ -143,7 +143,7 @@ async function handleSave() {
         await createLibrary({
           name: localName.value,
           root_path: localPath.value,
-          source_type: 'local',
+          source_type: 'local' as SourceType,
         })
         break
       case 'webdav': {

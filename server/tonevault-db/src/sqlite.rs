@@ -108,9 +108,9 @@ struct LibraryRow {
     username: Option<String>,
     password: Option<String>,
     scan_interval: Option<i64>,
-    last_scan: Option<time::OffsetDateTime>,
-    created_at: time::OffsetDateTime,
-    updated_at: time::OffsetDateTime,
+    last_scan: Option<chrono::DateTime<chrono::Utc>>,
+    created_at: chrono::DateTime<chrono::Utc>,
+    updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl From<LibraryRow> for Library {

@@ -1,5 +1,5 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -45,9 +45,9 @@ pub struct Library {
     pub username: Option<String>,
     pub password: Option<String>,
     pub scan_interval: Option<i64>,
-    pub last_scan: Option<OffsetDateTime>,
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
+    pub last_scan: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]

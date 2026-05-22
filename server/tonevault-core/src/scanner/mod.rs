@@ -2,7 +2,6 @@ use anyhow::Result;
 use std::path::{Path, PathBuf};
 use tokio::sync::mpsc;
 use tracing::{info, warn};
-use uuid::Uuid;
 
 use crate::metadata::MetadataParser;
 use crate::models::library::Library;
@@ -11,11 +10,11 @@ pub struct Scanner;
 
 #[derive(Debug, Clone)]
 pub enum ScannerEvent {
-    Started { library_id: Uuid },
-    Progress { library_id: Uuid, processed: i64, total: i64 },
-    BookParsed { library_id: Uuid, dir: String, metadata: crate::metadata::ParsedMetadata },
-    Completed { library_id: Uuid, new_books: i64, updated_books: i64 },
-    Error { library_id: Uuid, message: String },
+    Started { library_id: i64 },
+    Progress { library_id: i64, processed: i64, total: i64 },
+    BookParsed { library_id: i64, dir: String, metadata: crate::metadata::ParsedMetadata },
+    Completed { library_id: i64, new_books: i64, updated_books: i64 },
+    Error { library_id: i64, message: String },
 }
 
 impl Scanner {

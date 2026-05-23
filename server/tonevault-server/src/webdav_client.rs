@@ -88,7 +88,10 @@ async fn propfind(url: &str, username: &str, password: &str) -> Result<Vec<WebDa
 }
 
 fn parse_webdav_response(xml: &str, base_url: &str) -> Result<Vec<WebDavEntry>, Box<dyn std::error::Error>> {
+    // Parse base URL to get the origin (scheme + host + port)
     let base_url_normalized = base_url.trim_end_matches('/');
+    let origin = extract_origin(base_url_normalized);
+    let base_path = extract_path(base_url_normalized);
 
     let mut result = Vec::new();
 
@@ -100,36 +103,36 @@ fn parse_webdav_response(xml: &str, base_url: &str) -> Result<Vec<WebDavEntry>, 
             .or_else(|| extract_xml_value(resp, "href"))
             .unwrap_or_default();
 
-        let display_name = extract_xml_value(resp, "D:displayname")
-            .or_else(|| extract_xml_value(resp, "displayname"));
-
-        let is_collection = resp.contains("<D:collection/>") || resp.contains("<D:collection />");
+        let is_collection = resp.contains("<D:collection></D:collection>")
+            || resp.contains("<D:collection />")
+            || resp.contains("<D:collection/>");
 
         let content_length = extract_xml_value(resp, "D:getcontentlength")
             .or_else(|| extract_xml_value(resp, "getcontentlength"))
             .and_then(|s| s.parse::<i64>().ok());
 
-        // Skip the parent directory (href matches base_url)
+        // Normalize href
         let href_normalized = href.trim_end_matches('/');
-        if href_normalized == base_url_normalized {
+
+        // Skip the parent directory (href matches base path)
+        if href_normalized == base_path || href_normalized.is_empty() {
             continue;
         }
 
-        // Derive name from displayname or href path
-        let name = display_name.unwrap_or_else(|| {
-            href_normalized
-                .rsplit('/')
-                .next()
-                .unwrap_or("")
-                .to_string()
-        });
+        // Extract name from the last path segment of href
+        let name = href_normalized
+            .rsplit('/')
+            .next()
+            .unwrap_or("")
+            .to_string();
+        let name = percent_decode(&name);
 
-        // Derive path from href
-        let path = if href_normalized.starts_with("http") {
-            href_normalized.to_string()
+        // Build full path from href
+        let path = if href.starts_with('/') {
+            // Relative href
+            format!("{}{}", origin, href.trim_end_matches('/'))
         } else {
-            // Relative href - construct full URL
-            format!("{}/{}", base_url_normalized, href_normalized.trim_start_matches('/'))
+            href_normalized.to_string()
         };
 
         result.push(WebDavEntry {
@@ -143,16 +146,58 @@ fn parse_webdav_response(xml: &str, base_url: &str) -> Result<Vec<WebDavEntry>, 
     Ok(result)
 }
 
+fn extract_origin(url: &str) -> String {
+    // Extract scheme://host:port from URL
+    if let Some(idx) = url.find("://") {
+        let after_scheme = &url[idx + 3..];
+        if let Some(slash_idx) = after_scheme.find('/') {
+            return url[..idx + 3 + slash_idx].to_string();
+        }
+    }
+    url.to_string()
+}
+
+fn extract_path(url: &str) -> String {
+    if let Some(idx) = url.find("://") {
+        let after_scheme = &url[idx + 3..];
+        if let Some(slash_idx) = after_scheme.find('/') {
+            return after_scheme[slash_idx..].to_string();
+        }
+    }
+    "/".to_string()
+}
+
 fn extract_xml_value(xml: &str, tag: &str) -> Option<String> {
-    // Handle both <D:tag>value</D:tag> and <tag>value</tag>
     let open = format!("<{}>", tag);
     let close = format!("</{}>", tag);
 
     if let Some(start) = xml.find(&open) {
         let content_start = start + open.len();
         if let Some(end) = xml[content_start..].find(&close) {
-            return Some(xml[content_start..content_start + end].trim().to_string());
+            let value = xml[content_start..content_start + end].trim().to_string();
+            if !value.is_empty() {
+                return Some(value);
+            }
         }
     }
     None
+}
+
+fn percent_decode(s: &str) -> String {
+    let mut result = String::new();
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let hex = &s[i + 1..i + 3];
+            if let Ok(byte) = u8::from_str_radix(hex, 16) {
+                result.push(byte as char);
+                i += 3;
+                continue;
+            }
+        }
+        result.push(bytes[i] as char);
+        i += 1;
+    }
+    result
 }

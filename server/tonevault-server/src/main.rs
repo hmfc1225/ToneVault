@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use tower_http::cors::CorsLayer;
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
@@ -34,11 +35,21 @@ async fn main() -> anyhow::Result<()> {
 
     let state = Arc::new(AppState { repo });
 
-    let app = Router::new()
+    let web_dir = std::env::var("TONEVAULT_WEB_DIR")
+        .unwrap_or_else(|_| "./web/dist".to_string());
+    let index_path = std::path::PathBuf::from(format!("{}/index.html", web_dir));
+
+    let api_routes = Router::new()
         .merge(books::router())
         .merge(library::router())
         .merge(stream::router())
-        .merge(webdav_auth::router())
+        .merge(webdav_auth::router());
+
+    let app = Router::new()
+        .merge(api_routes)
+        .fallback_service(
+            ServeDir::new(&web_dir).not_found_service(ServeFile::new(index_path))
+        )
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state);

@@ -1,6 +1,6 @@
 services:
   tonevault:
-    image: ghcr.io/hmfc1225/tonevault:latest
+    image: tonevault
     build:
       context: https://github.com/hmfc1225/ToneVault.git#main
       dockerfile: Dockerfile

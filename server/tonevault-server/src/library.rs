@@ -18,7 +18,6 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/api/v1/libraries", axum::routing::get(list_libraries).post(create_library))
         .route("/api/v1/libraries/{id}", axum::routing::get(get_library).put(update_library).delete(delete_library))
         .route("/api/v1/libraries/scan", axum::routing::post(trigger_scan))
-        .route("/api/v1/libraries/webdav/connect", axum::routing::post(webdav_connect))
 }
 
 #[derive(Serialize)]
@@ -103,28 +102,4 @@ pub async fn trigger_scan(
         (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
     })?;
     Ok(StatusCode::ACCEPTED)
-}
-
-#[derive(Deserialize)]
-pub struct WebDavConnectRequest {
-    pub base_url: String,
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub path: Option<String>,
-}
-
-#[derive(Serialize)]
-pub struct WebDavEntry {
-    pub name: String,
-    pub path: String,
-    pub is_dir: bool,
-    pub size: Option<i64>,
-}
-
-pub async fn webdav_connect(
-    State(_state): State<Arc<AppState>>,
-    Json(_req): Json<WebDavConnectRequest>,
-) -> Result<Json<Vec<WebDavEntry>>, (StatusCode, String)> {
-    // WebDAV browsing not yet implemented
-    Ok(Json(vec![]))
 }

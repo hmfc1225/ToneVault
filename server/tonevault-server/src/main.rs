@@ -13,6 +13,7 @@ mod books;
 mod library;
 mod scan;
 mod stream;
+mod webdav_client;
 
 pub struct AppState {
     repo: Arc<dyn Repository>,
@@ -63,7 +64,8 @@ async fn main() -> anyhow::Result<()> {
     let api_routes = Router::new()
         .merge(books::router())
         .merge(library::router())
-        .merge(stream::router());
+        .merge(stream::router())
+        .merge(webdav_client::router());
 
     let app = Router::new()
         .merge(auth_routes)

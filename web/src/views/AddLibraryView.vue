@@ -130,7 +130,7 @@ async function browseWebdavDir(path: string) {
 
 async function selectWebdavDir(entry: WebDavEntry) {
   webdavSelectedPath.value = entry.path
-  await handleSave()
+  // Don't auto-save, let user click save button
 }
 
 function goBackToConnect() {

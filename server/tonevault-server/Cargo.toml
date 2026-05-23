@@ -11,6 +11,7 @@ postgres = ["tonevault-db/postgres"]
 [dependencies]
 tonevault-core = { path = "../tonevault-core" }
 tonevault-db = { path = "../tonevault-db", default-features = false }
+tonevault-auth = { path = "../tonevault-auth" }
 tonevault-webdav = { path = "../tonevault-webdav" }
 axum = "0.8"
 tokio = { workspace = true }

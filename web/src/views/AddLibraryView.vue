@@ -416,9 +416,19 @@ async function handleSave() {
 
           <!-- Directory listing -->
           <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-sm overflow-hidden">
-            <div class="p-4 border-b border-gray-100 dark:border-gray-700">
-              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">选择书库目录</p>
-              <p class="text-xs text-gray-400 dark:text-gray-500">点击文件夹进入，选择一个目录作为书库路径</p>
+            <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">选择书库目录</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500">点击文件夹进入，点击"选择"选中目录作为书库</p>
+              </div>
+              <button
+                v-if="webdavCurrentPath"
+                @click="webdavSelectedPath = webdavCurrentPath"
+                class="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                :class="webdavSelectedPath === webdavCurrentPath ? 'opacity-50' : ''"
+              >
+                使用当前目录
+              </button>
             </div>
 
             <!-- Loading -->
@@ -434,7 +444,7 @@ async function handleSave() {
               <button
                 v-for="entry in webdavEntries"
                 :key="entry.path"
-                @click="entry.is_dir ? browseWebdavDir(entry.path) : selectWebdavDir(entry)"
+                @click="entry.is_dir ? browseWebdavDir(entry.path) : null"
                 class="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 :class="webdavSelectedPath === entry.path ? 'bg-blue-50 dark:bg-blue-900/20' : ''"
               >
@@ -456,6 +466,13 @@ async function handleSave() {
                 <svg v-if="entry.is_dir" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
+                <button
+                  v-if="entry.is_dir"
+                  @click.stop="selectWebdavDir(entry)"
+                  class="ml-1 px-2 py-1 text-xs rounded-lg border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  选择
+                </button>
                 <svg v-if="webdavSelectedPath === entry.path" class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>

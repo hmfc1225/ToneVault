@@ -184,20 +184,20 @@ fn extract_xml_value(xml: &str, tag: &str) -> Option<String> {
 }
 
 fn percent_decode(s: &str) -> String {
-    let mut result = String::new();
-    let bytes = s.as_bytes();
+    let mut decoded = Vec::new();
+    let src = s.as_bytes();
     let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'%' && i + 2 < bytes.len() {
+    while i < src.len() {
+        if src[i] == b'%' && i + 2 < src.len() {
             let hex = &s[i + 1..i + 3];
             if let Ok(byte) = u8::from_str_radix(hex, 16) {
-                result.push(byte as char);
+                decoded.push(byte);
                 i += 3;
                 continue;
             }
         }
-        result.push(bytes[i] as char);
+        decoded.push(src[i]);
         i += 1;
     }
-    result
+    String::from_utf8(decoded).unwrap_or_else(|_| s.to_string())
 }

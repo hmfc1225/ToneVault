@@ -46,10 +46,7 @@ const canSave = computed(() => {
     case 'local':
       return localName.value.trim() !== '' && localPath.value.trim() !== ''
     case 'webdav':
-      if (webdavStep.value === 'connect') {
-        return webdavName.value.trim() !== '' && webdavUrl.value.trim() !== '' && webdavUsername.value.trim() !== '' && webdavPassword.value.trim() !== ''
-      }
-      return webdavSelectedPath.value.trim() !== ''
+      return webdavName.value.trim() !== '' && (webdavSelectedPath.value.trim() !== '' || webdavCurrentPath.value.trim() !== '')
     case 'rss':
       return rssName.value.trim() !== '' && rssUrl.value.trim() !== ''
     default:
@@ -59,10 +56,24 @@ const canSave = computed(() => {
 
 const webdavBreadcrumbs = computed(() => {
   if (!webdavCurrentPath.value) return []
-  const parts = webdavCurrentPath.value.split('/').filter(Boolean)
+  // webdavCurrentPath is a full URL like https://host:port/dav/WebDAV
+  // We want to show path segments after the origin
+  const url = webdavCurrentPath.value
+  const originMatch = url.match(/^(https?:\/\/[^/]+)(\/.*)?$/)
+  if (!originMatch) return []
+  const origin = originMatch[1]
+  const pathPart = (originMatch[2] || '').replace(/\/$/, '')
+  const originPath = webdavUrl.value.replace(/\/$/, '').match(/^https?:\/\/[^/]+(\/.*)?$/)
+  const basePath = (originPath?.[1] || '').replace(/\/$/, '')
+  // Only show segments after the base URL path
+  let relPath = pathPart
+  if (basePath && relPath.startsWith(basePath)) {
+    relPath = relPath.slice(basePath.length)
+  }
+  const parts = relPath.split('/').filter(Boolean)
   return parts.map((part: string, idx: number) => ({
     label: decodeURIComponent(part),
-    path: '/' + parts.slice(0, idx + 1).join('/'),
+    path: origin + basePath + '/' + parts.slice(0, idx + 1).join('/'),
   }))
 })
 
@@ -102,15 +113,13 @@ async function browseWebdavDir(path: string) {
   webdavBrowsing.value = true
   error.value = ''
   try {
-    const baseUrl = webdavUrl.value.replace(/\/$/, '')
-    const fullPath = path.startsWith('/') ? baseUrl.replace(/^(https?:\/\/[^/]+).*$/, '$1') + path : baseUrl + '/' + path.replace(/^\//, '')
     const entries = await webdavList({
-      url: fullPath,
+      url: path,
       username: webdavUsername.value,
       password: webdavPassword.value,
     })
     webdavEntries.value = entries
-    webdavCurrentPath.value = fullPath
+    webdavCurrentPath.value = path
     webdavSelectedPath.value = ''
   } catch (e: any) {
     error.value = e.response?.data?.error || '无法浏览该目录'
@@ -119,10 +128,9 @@ async function browseWebdavDir(path: string) {
   }
 }
 
-function selectWebdavDir(entry: WebDavEntry) {
-  if (entry.is_dir) {
-    webdavSelectedPath.value = entry.path
-  }
+async function selectWebdavDir(entry: WebDavEntry) {
+  webdavSelectedPath.value = entry.path
+  await handleSave()
 }
 
 function goBackToConnect() {
